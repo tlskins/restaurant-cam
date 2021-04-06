@@ -7,6 +7,8 @@ import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
 from collections import OrderedDict
+from shapely.geometry import Point
+from shapely.geometry.polygon import Polygon
 
 from models.experimental import attempt_load
 from utils.datasets import LoadImages
@@ -19,6 +21,10 @@ from centroid_tracker import CentroidTracker
 
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
+
+    # polygon
+    polygon = Polygon([(201, 1237), (24, 1632), (658, 2150), (3054, 2140), (2812, 912),
+                       (2185, 791), (1705, 790), (1737, 1140), (2119, 1174), (1908, 1744)])
 
     # Directories
     save_dir = Path(increment_path(Path(opt.project) / opt.name,
@@ -136,10 +142,16 @@ def detect(save_img=False):
             # draw both the ID of the object and the centroid of the
             # object on the output frame
             text = "ID {}".format(objectID)
+            color = (255, 0, 0)
+            # check if in polygon
+            point = Point(centroid[0], centroid[1])
+            if polygon.contains(point):
+                text += " TRACKED"
+                color = (0, 255, 0)
             cv2.putText(im0, text, (centroid[0] - 10, centroid[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
             cv2.circle(
-                im0, (centroid[0], centroid[1]), 4, (0, 255, 0), -1)
+                im0, (centroid[0], centroid[1]), 4, color, -1)
 
         # Print time (inference + NMS)
         t2 = time_synchronized()
