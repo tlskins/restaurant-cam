@@ -69,6 +69,8 @@ def detect(save_img=False):
             next(model.parameters())))  # run once
     t0 = time.time()
     objects = OrderedDict()
+    object_timer = {}
+
     for path, img, im0s, vid_cap in dataset:
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -82,6 +84,7 @@ def detect(save_img=False):
         txt_path = str(save_dir / 'labels' / p.stem) + \
             ('' if dataset.mode == 'image' else f'_{frame}')  # img.txt
         s += '%gx%g ' % img.shape[2:]  # print string
+        fps = vid_cap.get(cv2.CAP_PROP_FPS)
 
         # Inference
         t1 = time_synchronized()
@@ -141,15 +144,19 @@ def detect(save_img=False):
         for (objectID, centroid) in objects.items():
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "ID {}".format(objectID)
+            if objectID not in object_timer.keys():
+                object_timer[objectID] = 0
+            text = "ID {} | SECS {} |".format(
+                objectID, int(object_timer[objectID] / fps))
             color = (255, 0, 0)
             # check if in polygon
             point = Point(centroid[0], centroid[1])
             if polygon.contains(point):
+                object_timer[objectID] += 1
                 text += " TRACKED"
                 color = (0, 255, 0)
             cv2.putText(im0, text, (centroid[0] - 10, centroid[1] - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
             cv2.circle(
                 im0, (centroid[0], centroid[1]), 4, color, -1)
 
