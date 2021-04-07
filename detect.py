@@ -1,17 +1,18 @@
 import argparse
 import time
 from pathlib import Path
+import json
 
 import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from shapely.geometry import Point
 from shapely.geometry.polygon import Polygon
 
 from models.experimental import attempt_load
-from utils.datasets import LoadImages
+from utils.datasets import LoadImages, LoadStreams
 from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
     scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
@@ -21,10 +22,23 @@ from centroid_tracker import CentroidTracker
 
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
+    webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
+        ('rtsp://', 'rtmp://', 'http://'))
 
     # polygon
-    polygon = Polygon([(201, 1237), (24, 1632), (658, 2150), (3054, 2140), (2812, 912),
-                       (2185, 791), (1705, 790), (1737, 1140), (2119, 1174), (1908, 1744)])
+    # polygon = Polygon([(201, 1237), (24, 1632), (658, 2150), (3054, 2140), (2812, 912),
+    #                    (2185, 791), (1705, 790), (1737, 1140), (2119, 1174), (1908, 1744)])
+    # JSON file
+    contains_file = open('contains_lists.txt', "r")
+    # Reading from file
+    contains_lists = json.loads(contains_file.read())
+    polygon_dicts = []
+    NamedPoint = namedtuple("NamedPoint", ["x", "y"])
+    for contains_list in contains_lists:
+        polygon_dict = OrderedDict()
+        for coords in contains_list:
+            polygon_dict[NamedPoint(coords[0], coords[1])] = 1
+        polygon_dicts.append(polygon_dict)
 
     # Directories
     save_dir = Path(increment_path(Path(opt.project) / opt.name,
@@ -56,8 +70,16 @@ def detect(save_img=False):
 
     # Set Dataloader
     vid_path, vid_writer = None, None
+    if webcam:
+        view_img = check_imshow()
+        cudnn.benchmark = True  # set True to speed up constant image size inference
+        dataset = LoadStreams(source, img_size=imgsz, stride=stride)
+    else:
+        dataset = LoadImages(source, img_size=imgsz, stride=stride)
+
+    print("loaded dataset...")
+
     save_img = True
-    dataset = LoadImages(source, img_size=imgsz, stride=stride)
 
     # Get names and colors
     names = model.module.names if hasattr(model, 'module') else model.names
@@ -67,16 +89,25 @@ def detect(save_img=False):
     if device.type != 'cpu':
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(
             next(model.parameters())))  # run once
+
+    # Initialize run tracking variables
     t0 = time.time()
     objects = OrderedDict()
     object_timer = {}
 
     for path, img, im0s, vid_cap in dataset:
+        print("loop dataset...")
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
+
+        if webcam:  # batch_size >= 1
+            p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(
+            ), dataset.count
+        else:
+            p, s, im0, frame = path, '', im0s, getattr(dataset, 'frame', 0)
 
         p, s, im0, frame = path, '', im0s, getattr(dataset, 'frame', 0)
         p = Path(p)  # to Path
@@ -150,11 +181,16 @@ def detect(save_img=False):
                 objectID, int(object_timer[objectID] / fps))
             color = (255, 0, 0)
             # check if in polygon
-            point = Point(centroid[0], centroid[1])
-            if polygon.contains(point):
-                object_timer[objectID] += 1
-                text += " TRACKED"
-                color = (0, 255, 0)
+            # point = Point(centroid[0], centroid[1])
+            # if polygon.contains(point):
+            #     object_timer[objectID] += 1
+            #     text += " TRACKED"
+            #     color = (0, 255, 0)
+            for i, polygon_dict in enumerate(polygon_dicts):
+                if NamedPoint(centroid[0], centroid[1]) in polygon_dict:
+                    object_timer[objectID] += 1
+                    text += " TRACKED ZONE {}".format(i)
+                    color = (0, 255, 0)
             cv2.putText(im0, text, (centroid[0] - 10, centroid[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 1, color, 3)
             cv2.circle(

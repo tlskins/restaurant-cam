@@ -265,6 +265,7 @@ class LoadWebcam:  # for inference
 
 class LoadStreams:  # multiple IP or RTSP cameras
     def __init__(self, sources='streams.txt', img_size=640, stride=32):
+        print("init loadstreams...")
         self.mode = 'stream'
         self.img_size = img_size
         self.stride = stride
@@ -284,6 +285,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
             # Start the thread to read frames from the video stream
             print(f'{i + 1}/{n}: {s}... ', end='')
             cap = cv2.VideoCapture(eval(s) if s.isnumeric() else s)
+            print("after cap")
             assert cap.isOpened(), f'Failed to open {s}'
             w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
             h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -303,6 +305,7 @@ class LoadStreams:  # multiple IP or RTSP cameras
             print('WARNING: Different stream shapes detected. For optimal performance supply similarly-shaped streams.')
 
     def update(self, index, cap):
+        print("update...")
         # Read next stream frame in a daemon thread
         n = 0
         while cap.isOpened():
