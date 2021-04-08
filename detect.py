@@ -25,12 +25,8 @@ def detect(save_img=False):
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://'))
 
-    # polygon
-    # polygon = Polygon([(201, 1237), (24, 1632), (658, 2150), (3054, 2140), (2812, 912),
-    #                    (2185, 791), (1705, 790), (1737, 1140), (2119, 1174), (1908, 1744)])
-    # JSON file
+    # Load Polygons
     contains_file = open('contains_lists.txt', "r")
-    # Reading from file
     contains_lists = json.loads(contains_file.read())
     polygon_dicts = []
     NamedPoint = namedtuple("NamedPoint", ["x", "y"])
