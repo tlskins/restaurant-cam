@@ -67,13 +67,13 @@ def detect(save_img=False):
     # Set Dataloader
     vid_path, vid_writer = None, None
     if webcam:
+        print("is webcam LoadStreams...")
         view_img = check_imshow()
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride)
-
-    print("loaded dataset...")
+        print("is webcam LoadImages...")
 
     save_img = True
 
@@ -92,7 +92,6 @@ def detect(save_img=False):
     object_timer = {}
 
     for path, img, im0s, vid_cap in dataset:
-        print("loop dataset...")
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -105,7 +104,6 @@ def detect(save_img=False):
         else:
             p, s, im0, frame = path, '', im0s, getattr(dataset, 'frame', 0)
 
-        p, s, im0, frame = path, '', im0s, getattr(dataset, 'frame', 0)
         p = Path(p)  # to Path
         save_path = str(save_dir / p.name)  # img.jpg
         txt_path = str(save_dir / 'labels' / p.stem) + \
