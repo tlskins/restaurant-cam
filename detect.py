@@ -72,7 +72,7 @@ def detect(save_img=False):
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride)
-        print("is webcam LoadImages...")
+        print("LoadImages...")
 
     save_img = True
 
