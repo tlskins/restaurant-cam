@@ -210,7 +210,8 @@ def detect(save_img=False):
                         vid_writer.release()  # release previous video writer
 
                     fourcc = 'mp4v'  # output video codec
-                    fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                    fps = 0 if vid_cap is None else vid_cap.get(
+                        cv2.CAP_PROP_FPS)
                     w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                     h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
                     vid_writer = cv2.VideoWriter(
