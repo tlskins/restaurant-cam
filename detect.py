@@ -109,7 +109,7 @@ def detect(save_img=False):
         txt_path = str(save_dir / 'labels' / p.stem) + \
             ('' if dataset.mode == 'image' else f'_{frame}')  # img.txt
         s += '%gx%g ' % img.shape[2:]  # print string
-        fps = vid_cap.get(cv2.CAP_PROP_FPS)
+        fps = 0 if vid_cap is None else vid_cap.get(cv2.CAP_PROP_FPS)
 
         # Inference
         t1 = time_synchronized()
