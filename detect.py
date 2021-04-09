@@ -97,6 +97,7 @@ def detect(save_img=False):
         if img.ndimension() == 3:
             img = img.unsqueeze(0)
 
+        i = 0
         if webcam:  # batch_size >= 1
             p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(
             ), dataset.count
